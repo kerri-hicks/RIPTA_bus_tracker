@@ -250,16 +250,6 @@ Pure CSS Pie Timer by Hugo Giraudel https://css-tricks.com/css-pie-timer/
 
 			
 		</style>
-		<script>
-		  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-		  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-		  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-		  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
-		
-		  ga('create', 'UA-17909458-4', 'auto');
-		  ga('send', 'pageview');
-		
-		</script>
 	</head>
 <body>
 <div id="navbar">
@@ -603,7 +593,7 @@ if($about == "yes"){
 	echo "<div id=\"about\">
 	<p>This RIPTA bus tracker is not an official publication of RIPTA. It was made by Kerri Hicks (feat. Rich Siegel & Seth Dillingham). <a href=\"https://kerri.is/\">She likes making neat things</a>. So do <a href=\"http://www.barebones.com\">Rich</a> and <a href=\"http://www.truerwords.net/\">Seth</a>.</p>
 	
-	<p>You can <a href=\"https://github.com/kerri-hicks/RIPTA_low_data_tracker\">check out the code on GitHub</a> and run your own RIPTA bus tracker, if you want. Also, feel free to fork the project and do your thing.</p></div>
+	<p>You can <a href=\"https://github.com/kerri-hicks/RIPTA_bus_tracker\">check out the code on GitHub</a> and run your own RIPTA bus tracker, if you want. Also, feel free to fork the project and do your thing.</p></div>
 
 	" ;
 }
