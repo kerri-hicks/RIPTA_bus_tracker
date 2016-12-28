@@ -180,6 +180,20 @@ if($single == "yes" && $refreshcheck != "no"){
 			#timer { 
 				font-weight : bold ; 
 			}
+			div.loading {
+				float : left ;
+				width : 100% ;
+				position : fixed ;
+				margin-top : 20px ; 
+				z-index : -100 ;
+				text-align : center ;
+			}
+			
+			div.loading .wrapper {
+				margin : auto ;
+				margin-top : 10px ; 
+			}
+			
 			
 /* 
 Pure CSS Pie Timer by Hugo Giraudel https://css-tricks.com/css-pie-timer/
@@ -258,6 +272,47 @@ Pure CSS Pie Timer by Hugo Giraudel https://css-tricks.com/css-pie-timer/
    }
  }
 /* End Pure CSS pie timer */
+
+div.loading .wrapper {
+	margin : auto ;
+	margin-top : 10px ; 
+}
+
+div.loading .wrapper {
+  width: 60px;
+  height: 60px;
+}
+
+div.loading .wrapper .pie {
+  width: 50%;
+  height: 100%;
+  transform-origin: 100% 50%;
+  position: absolute;
+  background: #69f70d ;
+  border : 2px solid #000 ;
+}
+
+div.loading .wrapper .spinner {
+  border-radius: 100% 0 0 100% / 50% 0 0 50%;
+  z-index: 200;
+  border-right: none;
+  animation: rota 6s linear infinite;
+}
+
+
+div.loading .wrapper .filler {
+  border-radius: 0 100% 100% 0 / 0 50% 50% 0;
+  left: 50%;
+  opacity: 0;
+  z-index: 100;
+  animation: opa 6s steps(1, end) infinite reverse;
+  border-left: none;
+}
+
+div.loading .wrapper .mask {
+  animation: opa 6s steps(1, end) infinite;
+}
+
 			
 		</style>
 		<script>
@@ -507,6 +562,15 @@ elseif($single != ''){
 // ---------------------------------------------------------------------------------------
 // view all buses near me 
 if($view_all == "yes"){
+
+echo "<div class=\"loading\">Loading... <div class=\"wrapper\">
+  <div class=\"spinner pie\"></div>
+  <div class=\"filler pie\"></div>
+  <div class=\"mask\"></div>
+</div>
+</div>" ;
+
+
 if (($handle = fopen($trips_feed, "r")) !== FALSE) {
 	while (($data = fgetcsv($handle, 10000, ",")) !== FALSE) {	
 		$trips[$data[2]] = $data[4] ;
