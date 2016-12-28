@@ -21,14 +21,14 @@ $trips = array() ;
 $headers = array() ;
 
 if($single == "yes" && $refreshcheck != "no"){
-    $refresh = "<meta http-equiv=\"refresh\" content=\"30; url=\"$myurl\" />" ;
+    $refresh = "<meta http-equiv=\"refresh\" content=\"30\">" ;
 }
 
 ?><!DOCTYPE html>
 <html lang="en">
 	<head>
 		<meta charset="utf-8" />
-		<title>Low-Data RIPTA Bus Tracker</title>
+		<title>Unofficial RIPTA Bus Tracker</title>
 		<meta name="viewport" content="width=device-width, initial-scale=1">
 		<?php echo $refresh ; ?>
 		<style>
@@ -98,6 +98,8 @@ if($single == "yes" && $refreshcheck != "no"){
 			#content {
 				padding : 20px ; 
 			}
+			
+
 			#navbar {
 				width : 100% ;
 				height : 30px ;
@@ -117,6 +119,14 @@ if($single == "yes" && $refreshcheck != "no"){
 				text-decoration : none ;
 				margin-right : 6% ;  
 				font-size : .85em ;
+			}
+			@media (max-width: 500px) {
+			  #navbar {
+			    font-size : 3vw ;
+			  }
+			  #navbar ul {
+			  	padding-top : .6em ;
+			  }
 			}
 			.route_number a {
 				display : block ;
@@ -247,16 +257,26 @@ Pure CSS Pie Timer by Hugo Giraudel https://css-tricks.com/css-pie-timer/
      opacity: 0;
    }
  }
-
+/* End Pure CSS pie timer */
 			
 		</style>
+		<script>
+		  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+		  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+		  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+		  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+		
+		  ga('create', 'UA-17909458-4', 'auto');
+		  ga('send', 'pageview');
+		
+		</script>
 	</head>
 <body>
 <div id="navbar">
 	<ul>
 		<li><a href="https://kerri.is/coding/ripta/index.php">Choose a route</a></li>
 		<li><a href="https://kerri.is/coding/ripta/index.php?view_all=yes">Show all buses near me</a></li>
-		<li><a href="https://kerri.is/coding/ripta/index.php?about=yes">About</a></li>
+		<li><a href="https://kerri.is/coding/ripta/index.php?about=yes">About & Feedback</a></li>
 	</ul>
 </div>
 
@@ -426,6 +446,9 @@ elseif($single != ''){
 
 			if($single == "yes" && $refreshcheck != "no"){
 				$refresh_message = "<div style=\"float : right ; margin-top : 15px ; \">
+					<!--  
+					Pure CSS Pie Timer by Hugo Giraudel https://css-tricks.com/css-pie-timer/
+					-->
 					<div class=\"wrapper\">
 					  <div class=\"spinner pie\"></div>
 					  <div class=\"filler pie\"></div>
@@ -451,7 +474,8 @@ elseif($single != ''){
 			$display_block .= "<div class=\"single_text\">" .$refresh_message . "This bus location was last updated <span id=\"timer\"></span> seconds ago.<br />" ; 		
 
 			$display_block .=  "<b>Bus number:</b> " . str_pad($bus['vehicle']['label'], 4, '0', STR_PAD_LEFT) . "<br />" ;	
-					
+
+// Next stop not working properly anymore					
 // 			if ($bus['current_status'] == '0')
 // 			{
 // 				$display_block .=  "Leaving: " ;
@@ -595,6 +619,7 @@ if($about == "yes"){
 	
 	<p>You can <a href=\"https://github.com/kerri-hicks/RIPTA_bus_tracker\">check out the code on GitHub</a> and run your own RIPTA bus tracker, if you want. Also, feel free to fork the project and do your thing.</p></div>
 
+	<p>I'd love some <a href=\"https://docs.google.com/forms/d/1p7BqEbE-t-fvTE0fzPLqeNXEOsiTQveQeRuzbe5oeAM/\">feedback</a> if you'd be willing to share.</p>
 	" ;
 }
 
