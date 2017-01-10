@@ -152,7 +152,6 @@ $time = $runs['header']['timestamp'] ;	//	note the effective age of the data
 		<title>Unofficial RIPTA Bus Tracker</title>
 		<meta name="viewport" content="width=device-width, initial-scale=1">
 		
-		//	Sets up our refresh, if needed
 		<?php echo $refresh ; ?>
 		
 		<style>
