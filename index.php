@@ -2,7 +2,7 @@
 
 <?php
 
-//	All of RIPTA's dates are in the Eastern (US/NYC) time zone; we
+// All of RIPTA's dates are in the Eastern (US/NYC) time zone; we
 //	need to set the default because we cannot necessarily assume that
 //	the server is in the same time zone as the data feed
 date_default_timezone_set('America/New_York') ;
@@ -11,19 +11,18 @@ date_default_timezone_set('America/New_York') ;
 $routecheck = $_REQUEST['routecheck'] ; 	// RIPTA route number, e.g. "66"
 $tripcheck = $_REQUEST['tripcheck'] ;		// the scheduled trip on a route
 $refreshcheck = $_REQUEST['refreshcheck'] ;	// auto-refresh this page every 30 seconds?
-//	These determine the page behavior (and correspond to selections in the nav bar)
+//	These determine the page behavior (and correspond to selections)
 $single = $_REQUEST['single'] ; 			// view only a single run, with map
 $view_all = $_REQUEST['view_all'] ; 		// view all buses near you?
 $about = $_REQUEST['about'] ; 				// view the about page?
-//	Set up a refresh directive, if appropriate
-$refresh = '' ;
-//	If we're looking at a single trip, set auto-refresh to 30 seconds.
-if($single == "yes" && $refreshcheck != "no"){
-    $refresh = "<meta http-equiv=\"refresh\" content=\"30\">" ;
-}
+$uptunnel = $_REQUEST['uptunnel'] ; // view all buses near you
+$downtunnel = $_REQUEST['downtunnel'] ; // view all buses near you
+$tunnel_buses = array(32,33,34,40,49,61) ; // all buses that travel through the tunnel, except the 1
+
 //	REVIEW nobody uses these currently
 $myurl = $_SERVER['PHP_SELF'] ;
 $line_break = '' ;
+
 //	Data feeds:
 /*
 	$feed		RIPTA's real-time JSON feed
@@ -33,11 +32,23 @@ $line_break = '' ;
 $feed = file_get_contents("http://realtime.ripta.com:81/api/vehiclepositions?format=json") ;
 $trips_feed = "https://transitfeeds.com/p/rhode-island-public-transit-authority/363/latest/download/trips.txt" ;
 $stops_feed = "https://transitfeeds.com/p/rhode-island-public-transit-authority/363/latest/download/stops.txt" ; 
+$stop_times_feed = "https://transitfeeds.com/p/rhode-island-public-transit-authority/363/latest/download/stop_times.txt" ;
+
 //	These variables will be populated from the data feeds.
 $route_ids = array() ;	//	individual routes (66, 92, 14, etc)
 $stops = array() ;		//	individual bus stops
 $trips = array() ;		//	active bus trips
 $headers = array() ;	//	bus header sign text
+
+$runs = json_decode($feed, true) ;		//	ingest the data feed
+$time = $runs['header']['timestamp'] ;	//	note the effective age of the data
+//	Set up a refresh directive, if appropriate
+$refresh = '' ;
+//	If we're looking at a single trip, set auto-refresh to 30 seconds.
+if(($single == "yes" || $uptunnel == "yes" || $downtunnel == "yes") && $refreshcheck != "no"){
+    $refresh = "<meta http-equiv=\"refresh\" content=\"30\">" ;
+}
+
 /*
 Here we ingest specific columns of our data feeds into internal data structures. The actual reading is a standard use of fgetcsv(), but there's a trick in how we store the columns.
 In the loop, $data is an array that represents a single row in the CSV data. Each (zero-based) indexed member of $data corresponds to a column. Thus, ingesting a row of CSV like this:
@@ -131,8 +142,7 @@ function ingest_stops($stops_data_feed, &$stops_array)
 	}
 }
 
-$runs = json_decode($feed, true) ;		//	ingest the data feed
-$time = $runs['header']['timestamp'] ;	//	note the effective age of the data
+
 ?>
 
 <!DOCTYPE html>
@@ -437,15 +447,15 @@ $time = $runs['header']['timestamp'] ;	//	note the effective age of the data
 <body>
 <div id="navbar">
 	<ul>
-		<li><a href="https://kerri.is/coding/ripta/index.php">Choose a route</a></li>
-		<li><a href="https://kerri.is/coding/ripta/index.php?view_all=yes">Show all buses near me</a></li>
-		<li><a href="https://kerri.is/coding/ripta/index.php?about=yes">About & Feedback</a></li>
+		<li><a href="?">Choose a route</a></li>
+		<li><a href="?view_all=yes">Show all buses near me</a></li>
+		<li><a href="?about=yes">About & Feedback</a></li>
 	</ul>
 </div>
 
 <div id="content">
 <?php
-if($routecheck == '' && $single == '' && $view_all !='yes' && $about !='yes') {
+if($routecheck == '' && $single == '' && $view_all !='yes' && $uptunnel !='yes' && $downtunnel !='yes' && $about !='yes') {
 	//	Build a list of all of the currently active routes (i.e. any route with
 	//	active scheduled trips).
 	foreach($runs['entity'] as $chunk){
@@ -473,7 +483,7 @@ if($routecheck == '' && $single == '' && $view_all !='yes' && $about !='yes') {
         $routes .= "<div class=\"route_number\"><a href=\"?routecheck=" . $route_id . "\">" . $route_id_display . "</a></div>" ;		
     } 
     
-    $routes .= "<div class=\"route_number\"><a href=\"https://kerri.is/coding/ripta/index.php?uptunnel=yes\">&uarr;T</a></div><div class=\"route_number\"><a href=\"https://kerri.is/coding/ripta/index.php?downtunnel=yes\">&darr;T</a></div>" ;
+    $routes .= "<div class=\"route_number\"><a href=\"?uptunnel=yes\">&uarr;T</a></div><div class=\"route_number\"><a href=\"?downtunnel=yes\">&darr;T</a></div>" ;
 
     echo "<h1>Unofficial RIPTA Bus Tracker</h1><h2>Choose a route</h2>" ;
     echo $routes ;
@@ -522,9 +532,9 @@ elseif($single == '' && $routecheck !='') {
 		}	
 			
 		$display_block .= "<div class=\"listing\">
-			<div class=\"route\"><a href=\"index.php?single=yes&tripcheck=" . $bus['trip']['trip_id'] . "\"><b>" . $bus['trip']['route_id'] . " " . $inout . "</b></a>" . "</div><div class=\"inout\">" . $origin . "</div>" ;
+			<div class=\"route\"><a href=\"?single=yes&tripcheck=" . $bus['trip']['trip_id'] . "\"><b>" . $bus['trip']['route_id'] . " " . $inout . "</b></a>" . "</div><div class=\"inout\">" . $origin . "</div>" ;
 			
-		$display_block .= "<div class=\"view_link\"><a href=\"index.php?single=yes&tripcheck=" . $bus['trip']['trip_id'] . "\">View this trip</a></div>" ;
+		$display_block .= "<div class=\"view_link\"><a href=\"?single=yes&tripcheck=" . $bus['trip']['trip_id'] . "\">View this trip</a></div>" ;
 		
 		$display_block .= "<div class=\"box_content\">TO " . $headers[$trip_id] . "<br />" ;						
 		
@@ -581,10 +591,10 @@ elseif($single != ''){
 		
 		if($trips[$trip_id] == 0) {
 			$inout = "Inbound" ;
-			$bus_icon = "https://kerri.is/coding/ripta/indigo_bus.svg" ;
+			$bus_icon = "indigo_bus.svg" ;
 		}elseif($trips[$trip_id] == 1) {
 			$inout = "Outbound" ;
-			$bus_icon = "https://kerri.is/coding/ripta/green_bus.svg" ;
+			$bus_icon = "green_bus.svg" ;
 		}
 		
 		$show_map_script = "
@@ -623,9 +633,9 @@ elseif($single != ''){
 				  <div class=\"mask\"></div>
 				</div>
 				</div>
-				<a class=\"refresh_message\" style=\"background-color : red ; \" href=\"index.php?single=yes&tripcheck=" . $trip_id . "&refreshcheck=no\">Stop 30-second<br />autorefresh</a> 	" ;
+				<a class=\"refresh_message\" style=\"background-color : red ; \" href=\"?single=yes&tripcheck=" . $trip_id . "&refreshcheck=no\">Stop 30-second<br />autorefresh</a> 	" ;
 		}else{
-			$refresh_message = "<a class=\"refresh_message\" style=\"background-color : green ; \" href=\"index.php?single=yes&tripcheck=" . $trip_id . "\">Automatically update this page<br />every 30 seconds</a><br />" ;
+			$refresh_message = "<a class=\"refresh_message\" style=\"background-color : green ; \" href=\"?single=yes&tripcheck=" . $trip_id . "\">Automatically update this page<br />every 30 seconds</a><br />" ;
 		}
 		//	It's useful for the rider to know how long ago the bus' position was updated in
 		//	the data feed.
@@ -746,10 +756,10 @@ if($view_all == "yes"){
         $trip_id = $bus['trip']['trip_id'] ;
 		if($trips[$trip_id] == 0) {
 			$inout = "Inbound" ;
-			$bus_icon = "https://kerri.is/coding/ripta/indigo_bus.svg" ;
+			$bus_icon = "indigo_bus.svg" ;
 		} elseif ($trips[$trip_id] == 1) {
 			$inout = "Outbound" ;
-			$bus_icon = "https://kerri.is/coding/ripta/green_bus.svg" ;
+			$bus_icon = "green_bus.svg" ;
 		}	
         $latitude = $bus['position']['latitude'] ;
         $longitude = $bus['position']['longitude'] ;	
@@ -758,7 +768,7 @@ if($view_all == "yes"){
         //	display that specific trip, if desired.
         $javascript_vars .= "
                 var k" . $count . " = {
-                info: '<a style=\"text-decoration : none ; color : blue; font-weight : bold ; font-size : 1.2em ; \" href=\"https://kerri.is/coding/ripta/index.php?single=yes&tripcheck=" . $trip_id . "\"> ". $route_id . " " . $inout . "</a><br />Towards " . addslashes($headers[$trip_id])  . " ',
+                info: '<a style=\"text-decoration : none ; color : blue; font-weight : bold ; font-size : 1.2em ; \" href=\"?single=yes&tripcheck=" . $trip_id . "\"> ". $route_id . " " . $inout . "</a><br />Towards " . addslashes($headers[$trip_id])  . " ',
                 lat: " . $latitude . ",
                 long: " . $longitude . ",
                 icon: '" . $bus_icon . "'
@@ -778,205 +788,7 @@ echo $javascript_full . "</script>
 <script async defer src=\"https://maps.googleapis.com/maps/api/js?key=AIzaSyBZuazf752MqPpWsIpXCnw7JSu1yNfg3lg&callback=initMap\"></script>
 <div id=\"map\"></div>" ;
 }
-// ---------------------------------------------------------------------------------------
-// view all buses near me going up the tunnel
-if($uptunnel == "yes"){
-echo "<div class=\"loading\" style=\"margin-top : 90px ; \">Loading UpTunnel... <div class=\"wrapper\">
-  <div class=\"spinner pie\"></div>
-  <div class=\"filler pie\"></div>
-  <div class=\"mask\"></div>
-</div>
-</div>" ;
-  
-//	we'll need our trips and our stops.
-ingest_trips($trips_feed, $trips, $headers) ;
-ingest_stops($stops_feed, $stops) ;
-  
-// get $trip_id, match to trip ID in stop times feed, find the one with the 1st stop (edge for some buses), get the times of those first runs, find all the times that are later than now, display the earliest
-$javascript_vars = "<script type='text/javascript'>
-     function initMap() {
-        var pos, map;
-        function post_init() {
-            var infowindow = new google.maps.InfoWindow({});
-            var marker, i;
-            for (i = 0; i < locations.length; i++) {
-                marker = new google.maps.Marker({
-                    position: new google.maps.LatLng(locations[i][1], locations[i][2]),
-                    map: map,
-                    icon: locations[i][3]
-                });
-                google.maps.event.addListener(marker, 'click', (function (marker, i) {
-                    return function () {
-                        infowindow.setContent(locations[i][0]);
-                        infowindow.open(map, marker);
-                    }
-                })(marker, i));
-            }
-            var trafficLayer = new google.maps.TrafficLayer();
-                    trafficLayer.setMap(map);
-        }
-        pos = {
-            lat: '41.8250684',
-            lng: '-71.4114179'
-        };
-        map = new google.maps.Map(document.getElementById('map'), {
-            zoom: 15,
-            center: new google.maps.LatLng(pos.lat, pos.lng)
-        });
-        post_init();
-    }
-";
-$javascript_locations = "var locations = [" ;
-$count = 0 ;
-foreach($runs['entity'] as $chunk){
-    $bus = $chunk['vehicle'] ;
-    $route_id = $chunk['vehicle']['trip']['route_id'] ;
-    $trip_id = $bus['trip']['trip_id'] ;
-    
-    if(($trips[$trip_id] == 1 && in_array($route_id, $tunnel_buses)) || ($trips[$trip_id] == 0 && $route_id == 1)) {
-        $inout = "Outbound" ;
-        $bus_icon = "https://kerri.is/coding/ripta/green_bus.svg" ;
-        $latitude = $bus['position']['latitude'] ;
-        $longitude = $bus['position']['longitude'] ;	
-    
-        $javascript_vars .= "
-                var k" . $count . " = {
-                info: '<a style=\"text-decoration : none ; color : blue; font-weight : bold ; font-size : 1.2em ; \" href=\"https://kerri.is/coding/ripta/index.php?single=yes&tripcheck=" . $trip_id . "\"> ". $route_id . " " . $inout . "</a><br />Towards " . addslashes($headers[$trip_id])  . " ',
-                lat: " . $latitude . ",
-                long: " . $longitude . ",
-                icon: '" . $bus_icon . "'
-            };
-            " ;
-        $javascript_locations .= "
-        [k" . $count . ".info, " . "k" . $count . ".lat, " . "k" . $count . ".long, " . "k" . $count . ".icon" . "],
-        " ;
-        ++$count ;
-     }
-}
-    
-$javascript_locations .= "]";
-$javascript_full =  $javascript_vars . $javascript_locations . "    
-" ;
-echo $javascript_full . "</script>
-<script async defer src=\"https://maps.googleapis.com/maps/api/js?key=AIzaSyBZuazf752MqPpWsIpXCnw7JSu1yNfg3lg&callback=initMap\"></script>
-<h2 class=\"updownhed\">Buses going up the tunnel</h2>
-<div id=\"map\"></div>
-<a href=\"https://kerri.is/coding/ripta/index.php?downtunnel=yes\">View DownTunnel</a>" ;
-if($refreshcheck != "no"){
-	$refresh_message = "<div style=\"float : right ; margin-top : 15px ; \">
-		<!--  
-		Pure CSS Pie Timer by Hugo Giraudel https://css-tricks.com/css-pie-timer/
-		-->
-		<div class=\"wrapper\">
-		  <div class=\"spinner pie\"></div>
-		  <div class=\"filler pie\"></div>
-		  <div class=\"mask\"></div>
-		</div>
-		</div>
-		<a class=\"refresh_message\" style=\"background-color : red ; \" href=\"index.php?uptunnel=yes&refreshcheck=no\">Stop 30-second<br />autorefresh</a> 	" ;
-}else{
-	$refresh_message = "<a class=\"refresh_message\" style=\"background-color : green ; \" href=\"index.php?uptunnel=yes\">Automatically update this page<br />every 30 seconds</a><br />" ;
-}
-echo $refresh_message ;
-}
-// ---------------------------------------------------------------------------------------
-// view all buses near me going down the tunnel
-if($downtunnel == "yes"){
-    echo "<div class=\"loading\" style=\"margin-top : 90px ; \">Loading DownTunnel... <div class=\"wrapper\">
-      <div class=\"spinner pie\"></div>
-      <div class=\"filler pie\"></div>
-      <div class=\"mask\"></div>
-    </div>
-    </div>" ;
-    //	we'll need our trips and our stops.
-	ingest_trips($trips_feed, $trips, $headers) ;
-	ingest_stops($stops_feed, $stops) ;
-  
-    $javascript_vars = "<script type='text/javascript'>
-         function initMap() {
-            var pos, map;
-            function post_init() {
-                var infowindow = new google.maps.InfoWindow({});
-                var marker, i;
-                for (i = 0; i < locations.length; i++) {
-                    marker = new google.maps.Marker({
-                        position: new google.maps.LatLng(locations[i][1], locations[i][2]),
-                        map: map,
-                        icon: locations[i][3]
-                    });
-                    google.maps.event.addListener(marker, 'click', (function (marker, i) {
-                        return function () {
-                            infowindow.setContent(locations[i][0]);
-                            infowindow.open(map, marker);
-                        }
-                    })(marker, i));
-                }
-                var trafficLayer = new google.maps.TrafficLayer();
-                        trafficLayer.setMap(map);
-            }
-            pos = {
-                lat: '41.8286821',
-                lng: '-71.3992621'
-            };
-            map = new google.maps.Map(document.getElementById('map'), {
-                zoom: 16,
-                center: new google.maps.LatLng(pos.lat, pos.lng)
-            });
-            post_init();
-        }
-    ";
-    $javascript_locations = "var locations = [" ;
-    $count = 0 ;
-    foreach($runs['entity'] as $chunk){
-        $bus = $chunk['vehicle'] ;
-        $route_id = $chunk['vehicle']['trip']['route_id'] ;
-        $trip_id = $bus['trip']['trip_id'] ;
-    
-        if(($trips[$trip_id] == 0 && in_array($route_id, $tunnel_buses)) || ($trips[$trip_id] == 1 && $route_id == 1)) {
-            $inout = "Inbound" ;
-            $bus_icon = "https://kerri.is/coding/ripta/indigo_bus.svg" ;
-            $latitude = $bus['position']['latitude'] ;
-            $longitude = $bus['position']['longitude'] ;	
-    
-            $javascript_vars .= "
-                    var k" . $count . " = {
-                    info: '<a style=\"text-decoration : none ; color : blue; font-weight : bold ; font-size : 1.2em ; \" href=\"https://kerri.is/coding/ripta/index.php?single=yes&tripcheck=" . $trip_id . "\"> ". $route_id . " " . $inout . "</a><br />Towards " . addslashes($headers[$trip_id])  . " ',
-                    lat: " . $latitude . ",
-                    long: " . $longitude . ",
-                    icon: '" . $bus_icon . "'
-                };
-                " ;
-            $javascript_locations .= "
-            [k" . $count . ".info, " . "k" . $count . ".lat, " . "k" . $count . ".long, " . "k" . $count . ".icon" . "],
-            " ;
-            ++$count ;
-         }
-    }    
-    $javascript_locations .= "]";
-    $javascript_full =  $javascript_vars . $javascript_locations . "    
-    " ;
-    echo $javascript_full . "</script>
-    <script async defer src=\"https://maps.googleapis.com/maps/api/js?key=AIzaSyBZuazf752MqPpWsIpXCnw7JSu1yNfg3lg&callback=initMap\"></script>
-    <h2 class=\"updownhed\">Buses going down the tunnel</h2>
-    <div id=\"map\"></div>
-    <a href=\"https://kerri.is/coding/ripta/index.php?uptunnel=yes\">View UpTunnel</a>" ;
-    if($refreshcheck != "no"){
-        $refresh_message = "<div style=\"float : right ; margin-top : 15px ; \">
-            <!--  
-            Pure CSS Pie Timer by Hugo Giraudel https://css-tricks.com/css-pie-timer/
-            -->
-            <div class=\"wrapper\">
-              <div class=\"spinner pie\"></div>
-              <div class=\"filler pie\"></div>
-              <div class=\"mask\"></div>
-            </div>
-            </div>
-            <a class=\"refresh_message\" style=\"background-color : red ; \" href=\"index.php?downtunnel=yes&refreshcheck=no\">Stop 30-second<br />autorefresh</a> 	" ;
-    }else{
-        $refresh_message = "<a class=\"refresh_message\" style=\"background-color : green ; \" href=\"index.php?downtunnel=yes\">Automatically update this page<br />every 30 seconds</a><br />" ;
-    }
-    echo $refresh_message ;
-}
+
 // ---------------------------------------------------------------------------------------
 // view all buses near me going up the tunnel
 if($uptunnel == "yes"){
@@ -1038,13 +850,13 @@ foreach($runs['entity'] as $chunk){
     
     if(($trips[$trip_id] == 1 && in_array($route_id, $tunnel_buses)) || ($trips[$trip_id] == 0 && $route_id == 1)) {
         $inout = "Outbound" ;
-        $bus_icon = "https://kerri.is/coding/ripta/green_bus.svg" ;
+        $bus_icon = "green_bus.svg" ;
         $latitude = $bus['position']['latitude'] ;
         $longitude = $bus['position']['longitude'] ;	
     
         $javascript_vars .= "
                 var k" . $count . " = {
-                info: '<a style=\"text-decoration : none ; color : blue; font-weight : bold ; font-size : 1.2em ; \" href=\"https://kerri.is/coding/ripta/index.php?single=yes&tripcheck=" . $trip_id . "\"> ". $route_id . " " . $inout . "</a><br />Towards " . addslashes($headers[$trip_id])  . " ',
+                info: '<a style=\"text-decoration : none ; color : blue; font-weight : bold ; font-size : 1.2em ; \" href=\"?single=yes&tripcheck=" . $trip_id . "\"> ". $route_id . " " . $inout . "</a><br />Towards " . addslashes($headers[$trip_id])  . " ',
                 lat: " . $latitude . ",
                 long: " . $longitude . ",
                 icon: '" . $bus_icon . "'
@@ -1068,7 +880,7 @@ echo $javascript_full . "</script>
 <script async defer src=\"https://maps.googleapis.com/maps/api/js?key=AIzaSyBZuazf752MqPpWsIpXCnw7JSu1yNfg3lg&callback=initMap\"></script>
 <h2 class=\"updownhed\">Buses going up the tunnel</h2>
 <div id=\"map\"></div>
-<a href=\"https://kerri.is/coding/ripta/index.php?downtunnel=yes\">View DownTunnel</a>" ;
+<a href=\"?downtunnel=yes\">View DownTunnel</a>" ;
 
 if($refreshcheck != "no"){
 	$refresh_message = "<div style=\"float : right ; margin-top : 15px ; \">
@@ -1081,9 +893,9 @@ if($refreshcheck != "no"){
 		  <div class=\"mask\"></div>
 		</div>
 		</div>
-		<a class=\"refresh_message\" style=\"background-color : red ; \" href=\"index.php?uptunnel=yes&refreshcheck=no\">Stop 30-second<br />autorefresh</a> 	" ;
+		<a class=\"refresh_message\" style=\"background-color : red ; \" href=\"?uptunnel=yes&refreshcheck=no\">Stop 30-second<br />autorefresh</a> 	" ;
 }else{
-	$refresh_message = "<a class=\"refresh_message\" style=\"background-color : green ; \" href=\"index.php?uptunnel=yes\">Automatically update this page<br />every 30 seconds</a><br />" ;
+	$refresh_message = "<a class=\"refresh_message\" style=\"background-color : green ; \" href=\"?uptunnel=yes\">Automatically update this page<br />every 30 seconds</a><br />" ;
 }
 
 echo $refresh_message ;
@@ -1148,13 +960,13 @@ if($downtunnel == "yes"){
     
         if(($trips[$trip_id] == 0 && in_array($route_id, $tunnel_buses)) || ($trips[$trip_id] == 1 && $route_id == 1)) {
             $inout = "Inbound" ;
-            $bus_icon = "https://kerri.is/coding/ripta/indigo_bus.svg" ;
+            $bus_icon = "indigo_bus.svg" ;
             $latitude = $bus['position']['latitude'] ;
             $longitude = $bus['position']['longitude'] ;	
     
             $javascript_vars .= "
                     var k" . $count . " = {
-                    info: '<a style=\"text-decoration : none ; color : blue; font-weight : bold ; font-size : 1.2em ; \" href=\"https://kerri.is/coding/ripta/index.php?single=yes&tripcheck=" . $trip_id . "\"> ". $route_id . " " . $inout . "</a><br />Towards " . addslashes($headers[$trip_id])  . " ',
+                    info: '<a style=\"text-decoration : none ; color : blue; font-weight : bold ; font-size : 1.2em ; \" href=\"?single=yes&tripcheck=" . $trip_id . "\"> ". $route_id . " " . $inout . "</a><br />Towards " . addslashes($headers[$trip_id])  . " ',
                     lat: " . $latitude . ",
                     long: " . $longitude . ",
                     icon: '" . $bus_icon . "'
@@ -1177,7 +989,7 @@ if($downtunnel == "yes"){
     <script async defer src=\"https://maps.googleapis.com/maps/api/js?key=AIzaSyBZuazf752MqPpWsIpXCnw7JSu1yNfg3lg&callback=initMap\"></script>
     <h2 class=\"updownhed\">Buses going down the tunnel</h2>
     <div id=\"map\"></div>
-    <a href=\"https://kerri.is/coding/ripta/index.php?uptunnel=yes\">View UpTunnel</a>" ;
+    <a href=\"?uptunnel=yes\">View UpTunnel</a>" ;
 
     if($refreshcheck != "no"){
         $refresh_message = "<div style=\"float : right ; margin-top : 15px ; \">
@@ -1190,9 +1002,9 @@ if($downtunnel == "yes"){
               <div class=\"mask\"></div>
             </div>
             </div>
-            <a class=\"refresh_message\" style=\"background-color : red ; \" href=\"index.php?downtunnel=yes&refreshcheck=no\">Stop 30-second<br />autorefresh</a> 	" ;
+            <a class=\"refresh_message\" style=\"background-color : red ; \" href=\"?downtunnel=yes&refreshcheck=no\">Stop 30-second<br />autorefresh</a> 	" ;
     }else{
-        $refresh_message = "<a class=\"refresh_message\" style=\"background-color : green ; \" href=\"index.php?downtunnel=yes\">Automatically update this page<br />every 30 seconds</a><br />" ;
+        $refresh_message = "<a class=\"refresh_message\" style=\"background-color : green ; \" href=\"?downtunnel=yes\">Automatically update this page<br />every 30 seconds</a><br />" ;
     }
 
     echo $refresh_message ;
