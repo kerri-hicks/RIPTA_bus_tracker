@@ -11,44 +11,35 @@ date_default_timezone_set('America/New_York') ;
 $routecheck = $_REQUEST['routecheck'] ; 	// RIPTA route number, e.g. "66"
 $tripcheck = $_REQUEST['tripcheck'] ;		// the scheduled trip on a route
 $refreshcheck = $_REQUEST['refreshcheck'] ;	// auto-refresh this page every 30 seconds?
-
 //	These determine the page behavior (and correspond to selections in the nav bar)
 $single = $_REQUEST['single'] ; 			// view only a single run, with map
 $view_all = $_REQUEST['view_all'] ; 		// view all buses near you?
 $about = $_REQUEST['about'] ; 				// view the about page?
-
 //	Set up a refresh directive, if appropriate
 $refresh = '' ;
-
 //	If we're looking at a single trip, set auto-refresh to 30 seconds.
 if($single == "yes" && $refreshcheck != "no"){
     $refresh = "<meta http-equiv=\"refresh\" content=\"30\">" ;
 }
-
 //	REVIEW nobody uses these currently
 $myurl = $_SERVER['PHP_SELF'] ;
 $line_break = '' ;
-
 //	Data feeds:
 /*
 	$feed		RIPTA's real-time JSON feed
 	$trips_feed	CSV of all currently defined bus trips
 	$stops_feed	CSV of all currently defined bus stops
 */
-
 $feed = file_get_contents("http://realtime.ripta.com:81/api/vehiclepositions?format=json") ;
 $trips_feed = "https://transitfeeds.com/p/rhode-island-public-transit-authority/363/latest/download/trips.txt" ;
 $stops_feed = "https://transitfeeds.com/p/rhode-island-public-transit-authority/363/latest/download/stops.txt" ; 
-
 //	These variables will be populated from the data feeds.
 $route_ids = array() ;	//	individual routes (66, 92, 14, etc)
 $stops = array() ;		//	individual bus stops
 $trips = array() ;		//	active bus trips
 $headers = array() ;	//	bus header sign text
-
 /*
 Here we ingest specific columns of our data feeds into internal data structures. The actual reading is a standard use of fgetcsv(), but there's a trick in how we store the columns.
-
 In the loop, $data is an array that represents a single row in the CSV data. Each (zero-based) indexed member of $data corresponds to a column. Thus, ingesting a row of CSV like this:
 	
 	route_id,service_id,trip_id,trip_headsign,direction_id,block_id,shape_id
@@ -72,7 +63,6 @@ In the loop, $data is an array that represents a single row in the CSV data. Eac
 	So in addition to cherry-picking the values we need out of the data feeds,
 	we take this one step further, and use one value as an array "index" for the
 	variable in which we're storing the data.
-
 	In this way, our own variables function as key/value stores, in which the first
 	data item (the trip ID in our example) is used to hold the value we want. Later
 	on, this makes access to these items much faster and simpler than it would be
@@ -109,28 +99,33 @@ In the loop, $data is an array that represents a single row in the CSV data. Eac
 	In each loop, there's no separate variable for the trip ID,
 	we just use the column as an index directly. Thus:
 	
-		$headers[$data[2]] = $data[3];
+		$headers[$data[2]] = $data[3]
+	
+	A final note: each of the following functions accepts the array arguments
+	by *reference*, because otherwise changes made to the array within the 
+	function are lost when the function returns.
 */
-
-function ingest_trips()
+function ingest_trips($trips_data_feed, &$trips_array, &$headers_array)
 {
 	//	ingest the trip directions and trip header signs into separate
 	//	arrays, each keyed by the trip ID.
-	if (($handle = fopen($GLOBALS["trips_feed"], "r")) !== FALSE) {
-		while (($data = fgetcsv($handle, 10000, ",")) !== FALSE) {	
-			$trips[$data[2] /* trip_id */] = $data[4] /*direction_id*/ ;
-			$headers[$data[2] /* trip_id */] = $data[3] /*direction_id*/ ;		
+
+	if (($handle = fopen($trips_data_feed, "r")) !== FALSE) {
+		while (($data = fgetcsv($handle, 10000, ",")) !== FALSE) {
+			$trips_array[$data[2] /* trip_id */] = $data[4] /*direction_id*/ ;
+			$headers_array[$data[2] /* trip_id */] = $data[3] /*direction_id*/ ;		
+
 		}
 		fclose($handle) ;
 	}
 }
-
-function ingest_stops()
+function ingest_stops($stops_data_feed, &$stops_array)
 {
 	//	ingest the stop names into an array indexed by the stop ID
-	if (($handle = fopen($GLOBALS["stops_feed"], "r")) !== FALSE) {
+
+	if (($handle = fopen($stops_data_feed, "r")) !== FALSE) {
 		while (($data = fgetcsv($handle, 10000, ",")) !== FALSE) {
-			$stops[$data[0] /* stop_id */] = $data[2] /* stop_name */;
+			$stops_array[$data[0] /* stop_id */] = $data[2] /* stop_name */;
 		}
 		fclose($handle) ;
 	}
@@ -138,7 +133,6 @@ function ingest_stops()
 
 $runs = json_decode($feed, true) ;		//	ingest the data feed
 $time = $runs['header']['timestamp'] ;	//	note the effective age of the data
-
 ?>
 
 <!DOCTYPE html>
@@ -218,7 +212,6 @@ $time = $runs['header']['timestamp'] ;	//	note the effective age of the data
 				padding : 20px ; 
 			}
 			
-
 			#navbar {
 				width : 100% ;
 				height : 30px ;
@@ -391,17 +384,14 @@ $time = $runs['header']['timestamp'] ;	//	note the effective age of the data
 			   }
 			 }
 			/* End Pure CSS pie timer */
-
 			div.loading .wrapper {
 				margin : auto ;
 				margin-top : 10px ; 
 			}
-
 			div.loading .wrapper {
 			  width: 60px;
 			  height: 60px;
 			}
-
 			div.loading .wrapper .pie {
 			  width: 50%;
 			  height: 100%;
@@ -410,15 +400,12 @@ $time = $runs['header']['timestamp'] ;	//	note the effective age of the data
 			  background: #69f70d ;
 			  border : 2px solid #000 ;
 			}
-
 			div.loading .wrapper .spinner {
 			  border-radius: 100% 0 0 100% / 50% 0 0 50%;
 			  z-index: 200;
 			  border-right: none;
 			  animation: rota 6s linear infinite;
 			}
-
-
 			div.loading .wrapper .filler {
 			  border-radius: 0 100% 100% 0 / 0 50% 50% 0;
 			  left: 50%;
@@ -427,11 +414,9 @@ $time = $runs['header']['timestamp'] ;	//	note the effective age of the data
 			  animation: opa 6s steps(1, end) infinite reverse;
 			  border-left: none;
 			}
-
 			div.loading .wrapper .mask {
 			  animation: opa 6s steps(1, end) infinite;
 			}
-
 			
 		</style>
 		
@@ -460,7 +445,6 @@ $time = $runs['header']['timestamp'] ;	//	note the effective age of the data
 
 <div id="content">
 <?php
-
 if($routecheck == '' && $single == '' && $view_all !='yes' && $about !='yes') {
 	//	Build a list of all of the currently active routes (i.e. any route with
 	//	active scheduled trips).
@@ -474,7 +458,6 @@ if($routecheck == '' && $single == '' && $view_all !='yes' && $about !='yes') {
 	//	Lay down a grid of buttons.
 	$display_count = 1 ;
 	foreach($route_ids as $route_id) {
-
         $route_id_display = $route_id ;
         
 	    //	Route 11 is the R/Line, and the "11" route number is never ever displayed
@@ -492,19 +475,18 @@ if($routecheck == '' && $single == '' && $view_all !='yes' && $about !='yes') {
     
     $routes .= "<div class=\"route_number\"><a href=\"https://kerri.is/coding/ripta/index.php?uptunnel=yes\">&uarr;T</a></div><div class=\"route_number\"><a href=\"https://kerri.is/coding/ripta/index.php?downtunnel=yes\">&darr;T</a></div>" ;
 
-
     echo "<h1>Unofficial RIPTA Bus Tracker</h1><h2>Choose a route</h2>" ;
     echo $routes ;
 } 
-
 // ---------------------------------------------------------------------------------------
 // show all current runs of one route
 elseif($single == '' && $routecheck !='') {
 	
 	//	we'll need our trips and our stops.
-	ingest_trips() ;
-	ingest_stops() ;
-	
+
+	ingest_trips($trips_feed, $trips, $headers) ;
+	ingest_stops($stops_feed, $stops) ;
+
 	//	Now we're ready to look at the currently active trips. For each bus in the
 	//	data feed, first make sure that it's on a route that we're interested in,
 	//	and if so, generate all of the necessary display data.
@@ -527,7 +509,6 @@ elseif($single == '' && $routecheck !='') {
 			$outbound_is_was = "<span style=\"color : green ; \">Is scheduled to leave KP at " ;
 			$inbound_is_was = "<span style=\"color : green ; \">Scheduled to start run at " ;
 		}
-
 		//	This gives us a human-readable time stamp without leading zeroes.
 		$start_time = date("g:i a", $start_time) ;
 		
@@ -576,15 +557,13 @@ elseif($single == '' && $routecheck !='') {
 	$display_block .= "<div style=\"clear : both ; \"><i>Data last updated: " . $lastUpdate . "</i><br /></div>" ;
 	echo $display_block ;
 } 
-
 // ---------------------------------------------------------------------------------------
 // show this one bus
 elseif($single != ''){
-
 	//	we'll need our trip data.
-	ingest_trips() ;
-	ingest_stops() ;
-	
+	ingest_trips($trips_feed, $trips, $headers) ;
+	ingest_stops($stops_feed, $stops) ;
+
 	//	Now we're ready to go through the data and find our trip information
 	foreach($runs['entity'] as $chunk){
 		$bus = $chunk['vehicle'] ;
@@ -633,7 +612,6 @@ elseif($single != ''){
 		</script>" ;			
 		
 		$display_block .= "<div class=\"single_full\"><div class=\"single_route_header\">Route: " . $bus['trip']['route_id'] . " " . $inout . "</div><div class=\"single_content\">" ;						
-
 		if($single == "yes" && $refreshcheck != "no"){
 			$refresh_message = "<div style=\"float : right ; margin-top : 15px ; \">
 				<!--  
@@ -649,11 +627,9 @@ elseif($single != ''){
 		}else{
 			$refresh_message = "<a class=\"refresh_message\" style=\"background-color : green ; \" href=\"index.php?single=yes&tripcheck=" . $trip_id . "\">Automatically update this page<br />every 30 seconds</a><br />" ;
 		}
-
 		//	It's useful for the rider to know how long ago the bus' position was updated in
 		//	the data feed.
 		$data_age = time() - $bus['timestamp']  ;
-
 		$display_block .= "<script>
 		var timerVar = setInterval(countTimer, 1000);
 		var totalSeconds = $data_age ;
@@ -662,11 +638,8 @@ elseif($single != ''){
 		document.getElementById(\"timer\").innerHTML = totalSeconds;
 		}
 		</script>" ;
-
 		$display_block .= "<div class=\"single_text\">" .$refresh_message . "This bus location was last updated <span id=\"timer\"></span> seconds ago.<br />" ; 		
-
 		$display_block .=  "<b>Bus number:</b> " . str_pad($bus['vehicle']['label'], 4, '0', STR_PAD_LEFT) . "<br />" ;	
-
 // Next stop not working properly anymore					
 // 			if ($bus['current_status'] == '0')
 // 			{
@@ -682,12 +655,9 @@ elseif($single != ''){
 // 			}					
 // 				
 // 			$display_block .=  $stops[$bus['stop_id']] . "<br />" ;
-
 		$speed = round($bus['position']['speed']) ;
-
 		$display_block .=  "<b>Current speed:</b> $speed mph </div>" ;
 		
-
 		
 		$display_block .=  "<br />" . $show_map_script . "</div></div>";	
 		
@@ -698,7 +668,6 @@ elseif($single != ''){
 		break ;
 	}	
 }
-
 // ---------------------------------------------------------------------------------------
 // view all buses near me 
 if($view_all == "yes"){
@@ -711,7 +680,6 @@ if($view_all == "yes"){
 		<div class=\"mask\"></div>
 	</div>
 	</div>" ;
-
 	//	We'll use geolocation services (if available) to center the map.
 	$javascript_vars = "<script type='text/javascript'>
 		 function initMap() {
@@ -765,7 +733,6 @@ if($view_all == "yes"){
 	";
 	$javascript_locations = "var locations = [" ;
 	$count = 0 ;
-
 	//	Now just display all of the buses. The rider can zoom the map as desired to show
 	//	more (or fewer), and anything that's not on the map will simply not be shown.
     foreach($runs['entity'] as $chunk){
@@ -797,7 +764,6 @@ if($view_all == "yes"){
                 icon: '" . $bus_icon . "'
             };
             " ;
-
         $javascript_locations .= "
         [k" . $count . ".info, " . "k" . $count . ".lat, " . "k" . $count . ".long, " . "k" . $count . ".icon" . "],
         " ;
@@ -808,14 +774,209 @@ if($view_all == "yes"){
     
     $javascript_full =  $javascript_vars . $javascript_locations . "    
 " ;
-
 echo $javascript_full . "</script>
-
 <script async defer src=\"https://maps.googleapis.com/maps/api/js?key=AIzaSyBZuazf752MqPpWsIpXCnw7JSu1yNfg3lg&callback=initMap\"></script>
-
 <div id=\"map\"></div>" ;
 }
-
+// ---------------------------------------------------------------------------------------
+// view all buses near me going up the tunnel
+if($uptunnel == "yes"){
+echo "<div class=\"loading\" style=\"margin-top : 90px ; \">Loading UpTunnel... <div class=\"wrapper\">
+  <div class=\"spinner pie\"></div>
+  <div class=\"filler pie\"></div>
+  <div class=\"mask\"></div>
+</div>
+</div>" ;
+  
+//	we'll need our trips and our stops.
+ingest_trips($trips_feed, $trips, $headers) ;
+ingest_stops($stops_feed, $stops) ;
+  
+// get $trip_id, match to trip ID in stop times feed, find the one with the 1st stop (edge for some buses), get the times of those first runs, find all the times that are later than now, display the earliest
+$javascript_vars = "<script type='text/javascript'>
+     function initMap() {
+        var pos, map;
+        function post_init() {
+            var infowindow = new google.maps.InfoWindow({});
+            var marker, i;
+            for (i = 0; i < locations.length; i++) {
+                marker = new google.maps.Marker({
+                    position: new google.maps.LatLng(locations[i][1], locations[i][2]),
+                    map: map,
+                    icon: locations[i][3]
+                });
+                google.maps.event.addListener(marker, 'click', (function (marker, i) {
+                    return function () {
+                        infowindow.setContent(locations[i][0]);
+                        infowindow.open(map, marker);
+                    }
+                })(marker, i));
+            }
+            var trafficLayer = new google.maps.TrafficLayer();
+                    trafficLayer.setMap(map);
+        }
+        pos = {
+            lat: '41.8250684',
+            lng: '-71.4114179'
+        };
+        map = new google.maps.Map(document.getElementById('map'), {
+            zoom: 15,
+            center: new google.maps.LatLng(pos.lat, pos.lng)
+        });
+        post_init();
+    }
+";
+$javascript_locations = "var locations = [" ;
+$count = 0 ;
+foreach($runs['entity'] as $chunk){
+    $bus = $chunk['vehicle'] ;
+    $route_id = $chunk['vehicle']['trip']['route_id'] ;
+    $trip_id = $bus['trip']['trip_id'] ;
+    
+    if(($trips[$trip_id] == 1 && in_array($route_id, $tunnel_buses)) || ($trips[$trip_id] == 0 && $route_id == 1)) {
+        $inout = "Outbound" ;
+        $bus_icon = "https://kerri.is/coding/ripta/green_bus.svg" ;
+        $latitude = $bus['position']['latitude'] ;
+        $longitude = $bus['position']['longitude'] ;	
+    
+        $javascript_vars .= "
+                var k" . $count . " = {
+                info: '<a style=\"text-decoration : none ; color : blue; font-weight : bold ; font-size : 1.2em ; \" href=\"https://kerri.is/coding/ripta/index.php?single=yes&tripcheck=" . $trip_id . "\"> ". $route_id . " " . $inout . "</a><br />Towards " . addslashes($headers[$trip_id])  . " ',
+                lat: " . $latitude . ",
+                long: " . $longitude . ",
+                icon: '" . $bus_icon . "'
+            };
+            " ;
+        $javascript_locations .= "
+        [k" . $count . ".info, " . "k" . $count . ".lat, " . "k" . $count . ".long, " . "k" . $count . ".icon" . "],
+        " ;
+        ++$count ;
+     }
+}
+    
+$javascript_locations .= "]";
+$javascript_full =  $javascript_vars . $javascript_locations . "    
+" ;
+echo $javascript_full . "</script>
+<script async defer src=\"https://maps.googleapis.com/maps/api/js?key=AIzaSyBZuazf752MqPpWsIpXCnw7JSu1yNfg3lg&callback=initMap\"></script>
+<h2 class=\"updownhed\">Buses going up the tunnel</h2>
+<div id=\"map\"></div>
+<a href=\"https://kerri.is/coding/ripta/index.php?downtunnel=yes\">View DownTunnel</a>" ;
+if($refreshcheck != "no"){
+	$refresh_message = "<div style=\"float : right ; margin-top : 15px ; \">
+		<!--  
+		Pure CSS Pie Timer by Hugo Giraudel https://css-tricks.com/css-pie-timer/
+		-->
+		<div class=\"wrapper\">
+		  <div class=\"spinner pie\"></div>
+		  <div class=\"filler pie\"></div>
+		  <div class=\"mask\"></div>
+		</div>
+		</div>
+		<a class=\"refresh_message\" style=\"background-color : red ; \" href=\"index.php?uptunnel=yes&refreshcheck=no\">Stop 30-second<br />autorefresh</a> 	" ;
+}else{
+	$refresh_message = "<a class=\"refresh_message\" style=\"background-color : green ; \" href=\"index.php?uptunnel=yes\">Automatically update this page<br />every 30 seconds</a><br />" ;
+}
+echo $refresh_message ;
+}
+// ---------------------------------------------------------------------------------------
+// view all buses near me going down the tunnel
+if($downtunnel == "yes"){
+    echo "<div class=\"loading\" style=\"margin-top : 90px ; \">Loading DownTunnel... <div class=\"wrapper\">
+      <div class=\"spinner pie\"></div>
+      <div class=\"filler pie\"></div>
+      <div class=\"mask\"></div>
+    </div>
+    </div>" ;
+    //	we'll need our trips and our stops.
+	ingest_trips($trips_feed, $trips, $headers) ;
+	ingest_stops($stops_feed, $stops) ;
+  
+    $javascript_vars = "<script type='text/javascript'>
+         function initMap() {
+            var pos, map;
+            function post_init() {
+                var infowindow = new google.maps.InfoWindow({});
+                var marker, i;
+                for (i = 0; i < locations.length; i++) {
+                    marker = new google.maps.Marker({
+                        position: new google.maps.LatLng(locations[i][1], locations[i][2]),
+                        map: map,
+                        icon: locations[i][3]
+                    });
+                    google.maps.event.addListener(marker, 'click', (function (marker, i) {
+                        return function () {
+                            infowindow.setContent(locations[i][0]);
+                            infowindow.open(map, marker);
+                        }
+                    })(marker, i));
+                }
+                var trafficLayer = new google.maps.TrafficLayer();
+                        trafficLayer.setMap(map);
+            }
+            pos = {
+                lat: '41.8286821',
+                lng: '-71.3992621'
+            };
+            map = new google.maps.Map(document.getElementById('map'), {
+                zoom: 16,
+                center: new google.maps.LatLng(pos.lat, pos.lng)
+            });
+            post_init();
+        }
+    ";
+    $javascript_locations = "var locations = [" ;
+    $count = 0 ;
+    foreach($runs['entity'] as $chunk){
+        $bus = $chunk['vehicle'] ;
+        $route_id = $chunk['vehicle']['trip']['route_id'] ;
+        $trip_id = $bus['trip']['trip_id'] ;
+    
+        if(($trips[$trip_id] == 0 && in_array($route_id, $tunnel_buses)) || ($trips[$trip_id] == 1 && $route_id == 1)) {
+            $inout = "Inbound" ;
+            $bus_icon = "https://kerri.is/coding/ripta/indigo_bus.svg" ;
+            $latitude = $bus['position']['latitude'] ;
+            $longitude = $bus['position']['longitude'] ;	
+    
+            $javascript_vars .= "
+                    var k" . $count . " = {
+                    info: '<a style=\"text-decoration : none ; color : blue; font-weight : bold ; font-size : 1.2em ; \" href=\"https://kerri.is/coding/ripta/index.php?single=yes&tripcheck=" . $trip_id . "\"> ". $route_id . " " . $inout . "</a><br />Towards " . addslashes($headers[$trip_id])  . " ',
+                    lat: " . $latitude . ",
+                    long: " . $longitude . ",
+                    icon: '" . $bus_icon . "'
+                };
+                " ;
+            $javascript_locations .= "
+            [k" . $count . ".info, " . "k" . $count . ".lat, " . "k" . $count . ".long, " . "k" . $count . ".icon" . "],
+            " ;
+            ++$count ;
+         }
+    }    
+    $javascript_locations .= "]";
+    $javascript_full =  $javascript_vars . $javascript_locations . "    
+    " ;
+    echo $javascript_full . "</script>
+    <script async defer src=\"https://maps.googleapis.com/maps/api/js?key=AIzaSyBZuazf752MqPpWsIpXCnw7JSu1yNfg3lg&callback=initMap\"></script>
+    <h2 class=\"updownhed\">Buses going down the tunnel</h2>
+    <div id=\"map\"></div>
+    <a href=\"https://kerri.is/coding/ripta/index.php?uptunnel=yes\">View UpTunnel</a>" ;
+    if($refreshcheck != "no"){
+        $refresh_message = "<div style=\"float : right ; margin-top : 15px ; \">
+            <!--  
+            Pure CSS Pie Timer by Hugo Giraudel https://css-tricks.com/css-pie-timer/
+            -->
+            <div class=\"wrapper\">
+              <div class=\"spinner pie\"></div>
+              <div class=\"filler pie\"></div>
+              <div class=\"mask\"></div>
+            </div>
+            </div>
+            <a class=\"refresh_message\" style=\"background-color : red ; \" href=\"index.php?downtunnel=yes&refreshcheck=no\">Stop 30-second<br />autorefresh</a> 	" ;
+    }else{
+        $refresh_message = "<a class=\"refresh_message\" style=\"background-color : green ; \" href=\"index.php?downtunnel=yes\">Automatically update this page<br />every 30 seconds</a><br />" ;
+    }
+    echo $refresh_message ;
+}
 // ---------------------------------------------------------------------------------------
 // view all buses near me going up the tunnel
 if($uptunnel == "yes"){
@@ -827,11 +988,9 @@ echo "<div class=\"loading\" style=\"margin-top : 90px ; \">Loading UpTunnel... 
 </div>
 </div>" ;
 
-
 //	we'll need our trips and our stops.
-ingest_trips() ;
-ingest_stops() ;
-
+	ingest_trips($trips_feed, $trips, $headers) ;
+	ingest_stops($stops_feed, $stops) ;
 
 // get $trip_id, match to trip ID in stop times feed, find the one with the 1st stop (edge for some buses), get the times of those first runs, find all the times that are later than now, display the earliest
 
@@ -941,10 +1100,9 @@ if($downtunnel == "yes"){
     </div>
     </div>" ;
 
-
-    //	we'll need our trips and our stops.
-    ingest_trips() ;
-    ingest_stops() ;
+//	we'll need our trips and our stops.
+	ingest_trips($trips_feed, $trips, $headers) ;
+	ingest_stops($stops_feed, $stops) ;
 
     $javascript_vars = "<script type='text/javascript'>
          function initMap() {
@@ -1048,11 +1206,9 @@ if($about == "yes"){
 	<p>This RIPTA bus tracker is not an official publication of RIPTA. It was made by Kerri Hicks (feat. Rich Siegel & Seth Dillingham). <a href=\"https://kerri.is/\">She likes making neat things</a>. So do <a href=\"http://www.barebones.com\">Rich</a> and <a href=\"http://www.truerwords.net/\">Seth</a>.</p>
 	
 	<p>You can <a href=\"https://github.com/kerri-hicks/RIPTA_bus_tracker\">check out the code on GitHub</a> and run your own RIPTA bus tracker, if you want. Also, feel free to fork the project and do your thing.</p></div>
-
 	<p>I'd love some <a href=\"https://docs.google.com/forms/d/1p7BqEbE-t-fvTE0fzPLqeNXEOsiTQveQeRuzbe5oeAM/\">feedback</a> if you'd be willing to share.</p>
 	" ;
 }
-
 /* 
 Google API key (restricted to kerri.is)
 AIzaSyBZuazf752MqPpWsIpXCnw7JSu1yNfg3lg
