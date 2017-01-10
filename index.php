@@ -128,7 +128,7 @@ function ingest_trips()
 function ingest_stops()
 {
 	//	ingest the stop names into an array indexed by the stop ID
-	if (($handle = fopen($GLOBALS["stops_feed", "r")) !== FALSE) {
+	if (($handle = fopen($GLOBALS["stops_feed"], "r")) !== FALSE) {
 		while (($data = fgetcsv($handle, 10000, ",")) !== FALSE) {
 			$stops[$data[0] /* stop_id */] = $data[2] /* stop_name */;
 		}
