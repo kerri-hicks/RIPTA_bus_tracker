@@ -681,8 +681,10 @@ elseif($single != ''){
 // ---------------------------------------------------------------------------------------
 // view all buses near me 
 if($view_all == "yes"){
-	//	This is fairly straightforward Google Maps API stuff.
+	//	we'll need our trips
+	ingest_trips($trips_feed, $trips, $headers) ;
 	
+	//	This is fairly straightforward Google Maps API stuff.
 	echo "<div class=\"loading\">Loading... <div class=\"wrapper\">
 		<!-- MMmm, pie -->
 		<div class=\"spinner pie\"></div>
