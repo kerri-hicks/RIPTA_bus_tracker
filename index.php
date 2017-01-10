@@ -2,6 +2,11 @@
 
 <?php
 
+//	All of RIPTA's dates are in the Eastern (US/NYC) time zone; we
+//	need to set the default because we cannot necessarily assume that
+//	the server is in the same time zone as the data feed!
+date_default_timezone_set('America/New_York') ;
+
 //	Inputs to this page, as derived from the request URL.
 
 //	These reflect the information that the rider wants.
@@ -113,7 +118,7 @@ function ingest_trips()
 {
 	//	ingest the trip directions and trip header signs into separate
 	//	arrays, each keyed by the trip ID.
-	if (($handle = fopen($trips_feed, "r")) !== FALSE) {
+	if (($handle = fopen($GLOBALS["trips_feed"], "r")) !== FALSE) {
 		while (($data = fgetcsv($handle, 10000, ",")) !== FALSE) {	
 			$trips[$data[2] /* trip_id */] = $data[4] /*direction_id*/ ;
 			$headers[$data[2] /* trip_id */] = $data[3] /*direction_id*/ ;		
@@ -125,20 +130,13 @@ function ingest_trips()
 function ingest_stops()
 {
 	//	ingest the stop names into an array indexed by the stop ID
-	if (($handle = fopen($stops_feed, "r")) !== FALSE) {
+	if (($handle = fopen($GLOBALS["stops_feed", "r")) !== FALSE) {
 		while (($data = fgetcsv($handle, 10000, ",")) !== FALSE) {
 			$stops[$data[0] /* stop_id */] = $data[2] /* stop_name */;
 		}
 		fclose($handle) ;
 	}
 }
-
-//
-//	All of RIPTA's dates are in the Eastern (US/NYC) time zone; we
-//	need to set the default because we cannot necessarily assume that
-//	the server is in the same time zone as the data feed!
-//
-date_default_timezone_set('America/New_York') ;
 
 $runs = json_decode($feed, true) ;		//	ingest the data feed
 $time = $runs['header']['timestamp'] ;	//	note the effective age of the data
@@ -501,8 +499,8 @@ if($routecheck == '' && $single == '' && $view_all !='yes' && $about !='yes') {
 elseif($single == '' && $routecheck !='') {
 	
 	//	we'll need our trips and our stops.
-	ingest_trips();
-	ingest_stops();
+	ingest_trips() ;
+	ingest_stops() ;
 	
 	//	Now we're ready to look at the currently active trips. For each bus in the
 	//	data feed, first make sure that it's on a route that we're interested in,
@@ -583,8 +581,8 @@ elseif($single == '' && $routecheck !='') {
 elseif($single != ''){
 
 	//	we'll need our trip data.
-	ingest_trips();
-	ingest_stops();
+	ingest_trips() ;
+	ingest_stops() ;
 	
 	//	Now we're ready to go through the data and find our trip information
 	foreach($runs['entity'] as $chunk){
