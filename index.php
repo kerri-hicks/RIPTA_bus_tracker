@@ -109,22 +109,28 @@ In the loop, $data is an array that represents a single row in the CSV data. Eac
 		$headers[$data[2]] = $data[3];
 */
 
-//	ingest the trip directions and trip header signs into separate
-//	arrays, each keyed by the trip ID.
-if (($handle = fopen($trips_feed, "r")) !== FALSE) {
-	while (($data = fgetcsv($handle, 10000, ",")) !== FALSE) {	
-		$trips[$data[2] /* trip_id */] = $data[4] /*direction_id*/ ;
-		$headers[$data[2] /* trip_id */] = $data[3] /*direction_id*/ ;		
+function ingest_trips()
+{
+	//	ingest the trip directions and trip header signs into separate
+	//	arrays, each keyed by the trip ID.
+	if (($handle = fopen($trips_feed, "r")) !== FALSE) {
+		while (($data = fgetcsv($handle, 10000, ",")) !== FALSE) {	
+			$trips[$data[2] /* trip_id */] = $data[4] /*direction_id*/ ;
+			$headers[$data[2] /* trip_id */] = $data[3] /*direction_id*/ ;		
+		}
+		fclose($handle) ;
 	}
-	fclose($handle) ;
 }
 
-//	ingest the stop names into an array indexed by the stop ID
-if (($handle = fopen($stops_feed, "r")) !== FALSE) {
-	while (($data = fgetcsv($handle, 10000, ",")) !== FALSE) {
-		$stops[$data[0] /* stop_id */] = $data[2] /* stop_name */;
+function ingest_stops()
+{
+	//	ingest the stop names into an array indexed by the stop ID
+	if (($handle = fopen($stops_feed, "r")) !== FALSE) {
+		while (($data = fgetcsv($handle, 10000, ",")) !== FALSE) {
+			$stops[$data[0] /* stop_id */] = $data[2] /* stop_name */;
+		}
+		fclose($handle) ;
 	}
-	fclose($handle) ;
 }
 
 //
@@ -495,6 +501,10 @@ if($routecheck == '' && $single == '' && $view_all !='yes' && $about !='yes') {
 // show all current runs of one route
 elseif($single == '' && $routecheck !='') {
 	
+	//	we'll need our trips and our stops.
+	ingest_trips();
+	ingest_stops();
+	
 	//	Now we're ready to look at the currently active trips. For each bus in the
 	//	data feed, first make sure that it's on a route that we're interested in,
 	//	and if so, generate all of the necessary display data.
@@ -572,6 +582,11 @@ elseif($single == '' && $routecheck !='') {
 // ---------------------------------------------------------------------------------------
 // show this one bus
 elseif($single != ''){
+
+	//	we'll need our trip data.
+	ingest_trips();
+	ingest_stops();
+	
 	//	Now we're ready to go through the data and find our trip information
 	foreach($runs['entity'] as $chunk){
 		$bus = $chunk['vehicle'] ;
