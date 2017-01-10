@@ -510,7 +510,7 @@ elseif($single == '' && $routecheck !='') {
 	//	and if so, generate all of the necessary display data.
 	foreach($runs['entity'] as $chunk){
 		$bus = $chunk['vehicle'] ;
-		
+		$start_time = strtotime($bus['trip']['start_time']) ;
 		if($bus['trip']['route_id'] != $routecheck) {
 			//	this bus isn't on our route, so skip it.
 			continue ;
