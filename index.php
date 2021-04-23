@@ -656,7 +656,7 @@ elseif($single != ''){
 					trafficLayer.setMap(map);
 		  }
 		</script>
-		<script async defer src=\"https://maps.googleapis.com/maps/api/js?key=AIzaSyBZuazf752MqPpWsIpXCnw7JSu1yNfg3lg&callback=initMap\">
+		<script async defer src=\"https://maps.googleapis.com/maps/api/js?key=YOUR API KEY HERE&callback=initMap\">
 		</script>" ;			
 		
 		$display_block .= "<div class=\"single_full\"><div class=\"single_route_header\">Route: " . $bus['trip']['route_id'] . " " . $inout . "</div><div class=\"single_content\">" ;						
@@ -1097,10 +1097,7 @@ if($about == "yes"){
 	<p>There are a few bugs that still need to be fixed. For example, if your user agent (browser) knows how to do geolocation, but you say \"no\" to letting the browser use your location, you won't be able to use the \"All buses near me\" feature. That will be fixed in a future release.</p>
 	" ;
 }
-/* 
-Google API key (restricted to kerri.is)
-AIzaSyBZuazf752MqPpWsIpXCnw7JSu1yNfg3lg
-*/
+
 ?>
 </div>
 </body>
