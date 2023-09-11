@@ -29,20 +29,14 @@ $line_break = '' ;
 	$feed		RIPTA's real-time JSON feed
 	$trips_feed	CSV of all currently defined bus trips
 	$stops_feed	CSV of all currently defined bus stops
-	
-	Get the data from https://transitfeeds.com/p/rhode-island-public-transit-authority/363
-	
+		
 */
 $feed = file_get_contents("http://realtime.ripta.com:81/api/vehiclepositions?format=json") ;
 
-$trips_feed = "GTFS_Jan2021/trips.txt" ;
-$stops_feed = "GTFS_Jan2021/stops.txt" ; 
-$stop_times_feed = "GTFS_Jan2021/route_timepoints.txt" ;
-
-
-// $trips_feed = "https://transitfeeds.com/p/rhode-island-public-transit-authority/363/latest/download/trips.txt" ;
-// $stops_feed = "https://transitfeeds.com/p/rhode-island-public-transit-authority/363/latest/download/stops.txt" ; 
-// $stop_times_feed = "https://transitfeeds.com/p/rhode-island-public-transit-authority/363/latest/download/stop_times.txt" ;
+// Find Google Transit feeds at https://www.ripta.com/mobile-applications/ -- these change every 4 months or so
+$trips_feed = "GTFS_Sept2023/trips.txt" ;
+$stops_feed = "GTFS_Sept2023/stops.txt" ; 
+$stop_times_feed = "GTFS_Sept2023/route_timepoints.txt" ;
 
 //	These variables will be populated from the data feeds.
 $route_ids = array() ;	//	individual routes (66, 92, 14, etc)
@@ -452,6 +446,9 @@ function ingest_stops($stops_data_feed, &$stops_array)
 		<li><a href="?about=yes">About &<br />Feedback</a></li>
 	</ul>
 </div>
+<!--
+<div style="height : 20px ; background-color : red ; width : 100% ; color : white ; text-align : center ;">Notice: RIPTA's data feeds are temporarily down. (August 2021)</div>
+-->
 
 <div id="content">
 <?php
@@ -485,7 +482,7 @@ if($routecheck == '' && $single == '' && $view_all !='yes' && $uptunnel !='yes' 
     
     $routes .= "<div class=\"route_number\"><a href=\"?uptunnel=yes\">&uarr;T</a></div><div class=\"route_number\"><a href=\"?downtunnel=yes\">&darr;T</a></div>" ;
 
-    echo "<h1>Unofficial RIPTA Bus Tracker</h1><h2>Choose a route</h2><p><em>If the data is showing trips in only one direction, that means it's out of date. <a href='https://docs.google.com/forms/d/1p7BqEbE-t-fvTE0fzPLqeNXEOsiTQveQeRuzbe5oeAM/edit'>Please let me know</a>!</em>" ;
+    echo "<h1>Unofficial RIPTA Bus Tracker</h1><h2>Choose a route</h2><p><em>If the data is showing trips in only one direction, that means that RIPTA has published new route data, and I need to update it. <a href='https://docs.google.com/forms/d/1p7BqEbE-t-fvTE0fzPLqeNXEOsiTQveQeRuzbe5oeAM/edit'>Please let me know</a>!</em>" ;
     echo $routes ;
 } 
 // ---------------------------------------------------------------------------------------
@@ -656,7 +653,7 @@ elseif($single != ''){
 					trafficLayer.setMap(map);
 		  }
 		</script>
-		<script async defer src=\"https://maps.googleapis.com/maps/api/js?key=YOUR API KEY HERE&callback=initMap\">
+		<script async defer src=\"https://maps.googleapis.com/maps/api/js?key=XXXXXYOUR-API-CODE-HEREXXXXX&callback=initMap\">
 		</script>" ;			
 		
 		$display_block .= "<div class=\"single_full\"><div class=\"single_route_header\">Route: " . $bus['trip']['route_id'] . " " . $inout . "</div><div class=\"single_content\">" ;						
@@ -844,7 +841,7 @@ if($view_all == "yes"){
     $javascript_full =  $javascript_vars . $javascript_locations . "    
 " ;
 echo $javascript_full . "</script>
-<script async defer src=\"https://maps.googleapis.com/maps/api/js?key=AIzaSyBZuazf752MqPpWsIpXCnw7JSu1yNfg3lg&callback=initMap\"></script>
+<script async defer src=\"https://maps.googleapis.com/maps/api/js?key=XXXXYOUR-API-KEY-HEREXXXXXXX&callback=initMap\"></script>
 <div id=\"map\"></div>" ;
 }
 
@@ -943,7 +940,7 @@ $javascript_full =  $javascript_vars . $javascript_locations . "
 
 echo $javascript_full . "</script>
 
-<script async defer src=\"https://maps.googleapis.com/maps/api/js?key=AIzaSyBZuazf752MqPpWsIpXCnw7JSu1yNfg3lg&callback=initMap\"></script>
+<script async defer src=\"https://maps.googleapis.com/maps/api/js?key=XXXXYOUR-API-KEY-HEREXXXX&callback=initMap\"></script>
 <h2 class=\"updownhed\">Buses going up the tunnel</h2>
 <div id=\"map\"></div>
 <a href=\"?downtunnel=yes\">View DownTunnel</a>" ;
@@ -1059,7 +1056,7 @@ if($downtunnel == "yes"){
 
     echo $javascript_full . "</script>
 
-    <script async defer src=\"https://maps.googleapis.com/maps/api/js?key=AIzaSyBZuazf752MqPpWsIpXCnw7JSu1yNfg3lg&callback=initMap\"></script>
+    <script async defer src=\"https://maps.googleapis.com/maps/api/js?key=XXXXYOUR-API-KEY-HEREXXXX&callback=initMap\"></script>
     <h2 class=\"updownhed\">Buses going down the tunnel</h2>
     <div id=\"map\"></div>
     <a href=\"?uptunnel=yes\">View UpTunnel</a>" ;
@@ -1097,7 +1094,10 @@ if($about == "yes"){
 	<p>There are a few bugs that still need to be fixed. For example, if your user agent (browser) knows how to do geolocation, but you say \"no\" to letting the browser use your location, you won't be able to use the \"All buses near me\" feature. That will be fixed in a future release.</p>
 	" ;
 }
-
+/* 
+Google API key (restricted to kerri.is)
+XXXXXXXXXXXX
+*/
 ?>
 </div>
 </body>
